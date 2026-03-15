@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
 import '../models/student.dart';
@@ -73,6 +72,45 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final url = _currentStudent.avatarUrl.trim();
+    final isUrl = url.startsWith('http');
+    final isPath =
+        url.isNotEmpty &&
+        !isUrl &&
+        (url.startsWith('/') || url.contains(':\\'));
+
+    final placeholderAvatar = CircleAvatar(
+      radius: 50,
+      backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.2),
+      child: const Icon(Icons.person, size: 50, color: Colors.blue),
+    );
+
+    CircleAvatar buildAvatar() {
+      if (url.isEmpty) return placeholderAvatar;
+
+      if (isUrl) {
+        return CircleAvatar(
+          radius: 50,
+          backgroundImage: NetworkImage(url),
+          onBackgroundImageError: (exception, stackTrace) {
+            debugPrint('Error loading avatar: $exception');
+          },
+        );
+      }
+
+      if (isPath) {
+        return CircleAvatar(
+          radius: 50,
+          backgroundImage: FileImage(File(url)),
+          onBackgroundImageError: (exception, stackTrace) {
+            debugPrint('Error loading avatar: $exception');
+          },
+        );
+      }
+
+      return placeholderAvatar;
+    }
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -80,41 +118,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> {
       ),
       child: Row(
         children: [
-          Hero(
-            tag: 'avatar_${_currentStudent.id}',
-            child: _currentStudent.avatarUrl.isEmpty
-                ? CircleAvatar(
-                    radius: 50,
-                    backgroundColor: Theme.of(
-                      context,
-                    ).primaryColor.withValues(alpha: 0.2),
-                    child: const Icon(
-                      Icons.person,
-                      size: 50,
-                      color: Colors.blue,
-                    ),
-                  )
-                : kIsWeb
-                ? CircleAvatar(
-                    radius: 50,
-                    backgroundColor: Theme.of(
-                      context,
-                    ).primaryColor.withValues(alpha: 0.2),
-                    child: const Icon(
-                      Icons.person,
-                      size: 50,
-                      color: Colors.blue,
-                    ),
-                  )
-                : CircleAvatar(
-                    radius: 50,
-                    backgroundImage: FileImage(File(_currentStudent.avatarUrl)),
-                    onBackgroundImageError: (exception, stackTrace) {
-                      // Handle case where file doesn't exist
-                      debugPrint('Error loading avatar: $exception');
-                    },
-                  ),
-          ),
+          Hero(tag: 'avatar_${_currentStudent.id}', child: buildAvatar()),
           const SizedBox(width: 24),
           Expanded(
             child: Column(

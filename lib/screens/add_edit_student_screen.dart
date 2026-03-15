@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
-import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../models/student.dart';
 import '../providers/student_provider.dart';
@@ -37,9 +35,8 @@ class _AddEditStudentScreenState extends State<AddEditStudentScreen> {
 
   late String _selectedMajor = _majors.first;
   late DateTime _enrollmentDate = DateTime.now();
-  File? _selectedImageFile;
-  bool _isUploadingImage = false;
-  Student? _loadedStudent; // Track full student data with courses
+  late TextEditingController _avatarUrlController;
+  Student? _loadedStudent;
 
   @override
   void initState() {
@@ -52,6 +49,7 @@ class _AddEditStudentScreenState extends State<AddEditStudentScreen> {
     _emailController = TextEditingController(text: s?.email ?? '');
     _phoneController = TextEditingController(text: s?.phone ?? '');
     _notesController = TextEditingController(text: s?.notes ?? '');
+    _avatarUrlController = TextEditingController(text: s?.avatarUrl ?? '');
 
     _selectedMajor = s?.major ?? _majors.first;
     _enrollmentDate = s?.enrollmentDate ?? DateTime.now();
@@ -87,6 +85,7 @@ class _AddEditStudentScreenState extends State<AddEditStudentScreen> {
     _emailController.dispose();
     _phoneController.dispose();
     _notesController.dispose();
+    _avatarUrlController.dispose();
     super.dispose();
   }
 
@@ -104,42 +103,11 @@ class _AddEditStudentScreenState extends State<AddEditStudentScreen> {
     }
   }
 
-  Future<void> _pickImage() async {
-    final ImagePicker picker = ImagePicker();
-    try {
-      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-      if (image != null) {
-        setState(() {
-          _selectedImageFile = File(image.path);
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Lỗi chọn ảnh: $e')));
-      }
-    }
-  }
-
   void _saveForm() async {
     if (_formKey.currentState!.validate()) {
       try {
-        setState(() => _isUploadingImage = true);
-
-        // Use image path if selected, otherwise use existing or empty
-        String finalAvatarUrl = (widget.student?.avatarUrl ?? '').toString();
-        if (_selectedImageFile != null) {
-          final path = _selectedImageFile!.path;
-          // Only set path if it's not empty (web might return empty)
-          if (path.isNotEmpty) {
-            finalAvatarUrl = path.toString();
-          }
-        }
-
         final provider = Provider.of<StudentProvider>(context, listen: false);
 
-        // Get existing GPA if editing
         double gpa = 0.0;
         if (widget.student != null) {
           gpa = widget.student!.gpa;
@@ -152,7 +120,7 @@ class _AddEditStudentScreenState extends State<AddEditStudentScreen> {
           major: _selectedMajor,
           email: _emailController.text.trim(),
           phone: _phoneController.text.trim(),
-          avatarUrl: finalAvatarUrl,
+          avatarUrl: _avatarUrlController.text.trim(),
           notes: _notesController.text.trim(),
           gpa: gpa,
           enrollmentDate: _enrollmentDate,
@@ -166,11 +134,9 @@ class _AddEditStudentScreenState extends State<AddEditStudentScreen> {
           await provider.updateStudent(student);
         }
 
-        // Update GPA after saving student
         await provider.updateStudentGPA(student.id);
 
         if (mounted) {
-          setState(() => _isUploadingImage = false);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -184,7 +150,6 @@ class _AddEditStudentScreenState extends State<AddEditStudentScreen> {
         }
       } catch (e) {
         if (mounted) {
-          setState(() => _isUploadingImage = false);
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
@@ -246,7 +211,7 @@ class _AddEditStudentScreenState extends State<AddEditStudentScreen> {
               ),
               const SizedBox(height: 32),
               ElevatedButton(
-                onPressed: _isUploadingImage ? null : _saveForm,
+                onPressed: _saveForm,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   backgroundColor: Colors.blue,
@@ -255,18 +220,7 @@ class _AddEditStudentScreenState extends State<AddEditStudentScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: _isUploadingImage
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white,
-                          ),
-                        ),
-                      )
-                    : Text(isEditing ? 'Cập nhật' : 'Lưu thông tin'),
+                child: Text(isEditing ? 'Cập nhật' : 'Lưu thông tin'),
               ),
             ],
           ),
@@ -276,14 +230,16 @@ class _AddEditStudentScreenState extends State<AddEditStudentScreen> {
   }
 
   Widget _buildAvatarPicker() {
-    final hasNewImage = _selectedImageFile != null;
-    final hasOldImage =
-        widget.student != null &&
-        widget.student!.avatarUrl.isNotEmpty &&
-        !kIsWeb;
+    final currentUrl = _avatarUrlController.text.trim();
+    final isUrl = currentUrl.startsWith('http');
+    final isPath =
+        currentUrl.isNotEmpty &&
+        !isUrl &&
+        (currentUrl.startsWith('/') || currentUrl.contains(':\\'));
 
     return Column(
       children: [
+        // Preview Container
         Container(
           width: 120,
           height: 120,
@@ -291,37 +247,77 @@ class _AddEditStudentScreenState extends State<AddEditStudentScreen> {
             shape: BoxShape.circle,
             color: Colors.grey.shade200,
             border: Border.all(
-              color: hasNewImage ? Colors.green : Colors.grey,
+              color: currentUrl.isNotEmpty ? Colors.blue : Colors.grey,
               width: 2,
             ),
           ),
-          child: hasNewImage
-              ? ClipRRect(
-                  borderRadius: BorderRadius.circular(60),
-                  child: Image.file(_selectedImageFile!, fit: BoxFit.cover),
-                )
-              : hasOldImage
-              ? ClipRRect(
-                  borderRadius: BorderRadius.circular(60),
-                  child: Image.file(
-                    File(widget.student!.avatarUrl),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(60),
+            child: currentUrl.isEmpty
+                ? const Icon(Icons.person, size: 60)
+                : isUrl
+                ? Image.network(
+                    currentUrl,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) =>
-                        const Icon(Icons.person, size: 60),
-                  ),
-                )
-              : const Icon(Icons.person, size: 60),
-        ),
-        const SizedBox(height: 12),
-        ElevatedButton.icon(
-          onPressed: _pickImage,
-          icon: const Icon(Icons.photo_library),
-          label: const Text('Tải ảnh đại diện (tùy chọn)'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green,
-            foregroundColor: Colors.white,
+                        const Icon(Icons.image_not_supported, size: 60),
+                  )
+                : isPath
+                ? Image.file(
+                    File(currentUrl),
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) =>
+                        const Icon(Icons.image_not_supported, size: 60),
+                  )
+                : const Icon(Icons.image_not_supported, size: 60),
           ),
         ),
+        const SizedBox(height: 12),
+
+        // URL/Path input field
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: TextFormField(
+            controller: _avatarUrlController,
+            decoration: InputDecoration(
+              labelText: 'URL hoặc đường dẫn ảnh (tùy chọn)',
+              hintText: 'https://... hoặc /path/to/file',
+              prefixIcon: const Icon(Icons.image),
+              suffixIcon: currentUrl.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        setState(() {
+                          _avatarUrlController.clear();
+                        });
+                      },
+                    )
+                  : null,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+        ),
+
+        // Platform info
+        if (currentUrl.isNotEmpty && isPath)
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0),
+            child: Container(
+              padding: const EdgeInsets.all(8.0),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade100,
+                border: Border.all(color: Colors.orange),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                '⚠️ Đường dẫn local không hoạt động trên Web. Dùng URL để hỗ trợ Web.',
+                style: TextStyle(fontSize: 12, color: Colors.orange),
+              ),
+            ),
+          ),
       ],
     );
   }

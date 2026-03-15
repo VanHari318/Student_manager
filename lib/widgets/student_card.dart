@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'dart:io';
 import '../models/student.dart';
 import '../screens/student_detail_screen.dart';
@@ -8,6 +7,46 @@ class StudentCard extends StatelessWidget {
   final Student student;
 
   const StudentCard({super.key, required this.student});
+
+  Widget _buildAvatar(BuildContext context) {
+    final url = student.avatarUrl.trim();
+    final isUrl = url.startsWith('http');
+    final isPath =
+        url.isNotEmpty &&
+        !isUrl &&
+        (url.startsWith('/') || url.contains(':\\'));
+
+    final placeholder = Container(
+      width: 50,
+      height: 50,
+      color: Colors.grey.shade200,
+      child: const Icon(Icons.person, color: Colors.blue),
+    );
+
+    if (url.isEmpty) return placeholder;
+
+    if (isUrl) {
+      return Image.network(
+        url,
+        width: 50,
+        height: 50,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => placeholder,
+      );
+    }
+
+    if (isPath) {
+      return Image.file(
+        File(url),
+        width: 50,
+        height: 50,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => placeholder,
+      );
+    }
+
+    return placeholder;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,38 +60,7 @@ class StudentCard extends StatelessWidget {
           tag: 'avatar_${student.id}',
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: student.avatarUrl.isEmpty
-                ? Container(
-                    width: 50,
-                    height: 50,
-                    color: Theme.of(
-                      context,
-                    ).primaryColor.withValues(alpha: 0.2),
-                    child: const Icon(Icons.person, color: Colors.blue),
-                  )
-                : kIsWeb
-                ? Container(
-                    width: 50,
-                    height: 50,
-                    color: Theme.of(
-                      context,
-                    ).primaryColor.withValues(alpha: 0.2),
-                    child: const Icon(Icons.person, color: Colors.blue),
-                  )
-                : Image.file(
-                    File(student.avatarUrl),
-                    width: 50,
-                    height: 50,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      width: 50,
-                      height: 50,
-                      color: Theme.of(
-                        context,
-                      ).primaryColor.withValues(alpha: 0.2),
-                      child: const Icon(Icons.person, color: Colors.blue),
-                    ),
-                  ),
+            child: _buildAvatar(context),
           ),
         ),
         title: Text(

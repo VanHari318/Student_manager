@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'dart:io';
 import 'dart:async';
 import '../models/student.dart';
 import '../models/course.dart';
@@ -155,19 +154,7 @@ class FirestoreService {
   // Delete a student
   Future<void> deleteStudent(String id) async {
     try {
-      // Get student data to retrieve avatarUrl
-      final studentDoc = await _studentsRef.doc(id).get();
-      if (studentDoc.exists) {
-        final studentData = _toMap(studentDoc);
-        final avatarUrl = (studentData['avatarUrl'] ?? '').toString();
-
-        // Delete avatar file in background (don't await)
-        if (avatarUrl.isNotEmpty) {
-          _deleteAvatarFileInBackground(avatarUrl);
-        }
-      }
-
-      // Delete student from Firestore
+      // Delete student from Firestore (avatarUrl Base64 string deletes automatically)
       await _studentsRef.doc(id).delete();
 
       // Delete all courses assigned to this student
@@ -181,20 +168,6 @@ class FirestoreService {
       print('Error deleting student: $e');
       rethrow;
     }
-  }
-
-  // Helper to delete avatar file in background without blocking
-  void _deleteAvatarFileInBackground(String filePath) {
-    Future.microtask(() async {
-      try {
-        final file = File(filePath);
-        if (await file.exists()) {
-          await file.delete();
-        }
-      } catch (e) {
-        print('Error deleting avatar file in background: $e');
-      }
-    });
   }
 
   // Get student with all courses loaded (for edit screen)
