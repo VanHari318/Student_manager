@@ -1,12 +1,17 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/student.dart';
+import '../models/course.dart';
 import '../services/firestore_service.dart';
 import '../services/api_service.dart';
 
 class StudentProvider with ChangeNotifier {
   final FirestoreService _firestoreService = FirestoreService();
   final ApiService _apiService = ApiService();
+
+  Stream<List<Course>> getStudentCourses(String studentId) {
+    return _firestoreService.streamCourses(studentId);
+  }
 
   List<Student> _students = [];
   bool _isLoading = false;

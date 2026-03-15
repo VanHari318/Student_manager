@@ -1,5 +1,6 @@
 class Course {
   String id;
+  String studentId;
   String name;
   String semester;
   int credits;
@@ -7,6 +8,7 @@ class Course {
 
   Course({
     required this.id,
+    required this.studentId,
     required this.name,
     required this.semester,
     required this.credits,
@@ -16,6 +18,7 @@ class Course {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'studentId': studentId,
       'name': name,
       'semester': semester,
       'credits': credits,
@@ -26,6 +29,7 @@ class Course {
   factory Course.fromJson(Map<String, dynamic> json) {
     return Course(
       id: json['id'] ?? '',
+      studentId: json['studentId'] ?? '',
       name: json['name'] ?? '',
       semester: json['semester'] ?? '',
       credits: json['credits'] ?? 0,

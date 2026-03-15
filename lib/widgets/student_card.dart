@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 import '../models/student.dart';
+import '../screens/student_detail_screen.dart';
 
 class StudentCard extends StatelessWidget {
   final Student student;
@@ -63,7 +64,12 @@ class StudentCard extends StatelessWidget {
         ),
         trailing: const Icon(Icons.chevron_right),
         onTap: () {
-          // TODO: Navigate to Detail Screen
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => StudentDetailScreen(student: student),
+            ),
+          );
         },
       ),
     );

@@ -39,7 +39,6 @@ class Student {
       'notes': notes,
       'gpa': gpa,
       'enrollmentDate': enrollmentDate.toIso8601String(),
-      'courses': courses.map((x) => x.toJson()).toList(),
     };
   }
 

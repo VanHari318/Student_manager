@@ -4,6 +4,9 @@ import '../providers/student_provider.dart';
 import '../providers/theme_provider.dart';
 import '../widgets/stat_card.dart';
 import '../widgets/student_card.dart';
+import 'student_list_screen.dart';
+import 'add_edit_student_screen.dart';
+import 'statistics_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -104,8 +107,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           icon: Icons.add,
                           label: 'Thêm Mới',
                           onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Navigation to Add Screen pending...'))
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const AddEditStudentScreen()),
                             );
                           },
                         ),
@@ -114,8 +118,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           icon: Icons.list,
                           label: 'Tất Cả',
                           onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Navigation to List Screen pending...'))
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const StudentListScreen()),
                             );
                           },
                         ),
@@ -124,8 +129,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           icon: Icons.pie_chart,
                           label: 'Thống Kê',
                           onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Navigation to Stats Screen pending...'))
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const StatisticsScreen()),
                             );
                           },
                         ),
@@ -159,7 +165,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         TextButton(
                           onPressed: () {
-                            // Navigate to all students
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const StudentListScreen()),
+                            );
                           },
                           child: const Text('Xem tất cả'),
                         )

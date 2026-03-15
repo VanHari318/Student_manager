@@ -20,9 +20,10 @@ class ApiService {
           // Generate a sample enrollment date
           final enrollDate = dob.add(const Duration(days: 18 * 365));
 
+          final sId = _uuid.v4();
           return Student(
-            id: _uuid.v4(),
-            name: '${user['name']['first']} ${user['name']['last']}',
+            id: sId,
+            name: _getRandomVietnameseName(),
             studentId: 'SV${user['login']['salt'].toString().substring(0, 6).toUpperCase()}',
             major: _getRandomMajor(),
             email: user['email'],
@@ -31,7 +32,7 @@ class ApiService {
             notes: 'Sample generated data',
             gpa: _getRandomGpa(),
             enrollmentDate: enrollDate,
-            courses: _generateSampleCourses(),
+            courses: _generateSampleCourses(sId),
           );
         }).toList();
       } else {
@@ -40,6 +41,18 @@ class ApiService {
     } catch (e) {
       throw Exception('Error fetching sample data: $e');
     }
+  }
+
+  String _getRandomVietnameseName() {
+    final lastNames = ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Huỳnh', 'Phan', 'Vũ', 'Võ', 'Đặng', 'Bùi', 'Đỗ', 'Hồ', 'Ngô', 'Dương', 'Lý'];
+    final middleNames = ['Văn', 'Thị', 'Hoàng', 'Minh', 'Ngọc', 'Quốc', 'Tuấn', 'Phương', 'Hồng', 'Thanh', 'Đức', 'Gia'];
+    final firstNames = ['Anh', 'Bình', 'Châu', 'Dương', 'Dũng', 'Hải', 'Hiếu', 'Hoà', 'Huy', 'Hùng', 'Hương', 'Hà', 'Khang', 'Khánh', 'Kiên', 'Lâm', 'Linh', 'Long', 'Minh', 'Nam', 'Nghĩa', 'Nhung', 'Phúc', 'Phương', 'Quang', 'Quân', 'Sơn', 'Tài', 'Tân', 'Thái', 'Thành', 'Thảo', 'Thắng', 'Thu', 'Trang', 'Trí', 'Trung', 'Tuấn', 'Tùng', 'Việt', 'Vinh', 'Xuân', 'Yến'];
+
+    lastNames.shuffle();
+    middleNames.shuffle();
+    firstNames.shuffle();
+
+    return '${lastNames.first} ${middleNames.first} ${firstNames.first}';
   }
 
   String _getRandomMajor() {
@@ -52,7 +65,7 @@ class ApiService {
     return list.first;
   }
 
-  List<Course> _generateSampleCourses() {
+  List<Course> _generateSampleCourses(String studentId) {
     final titles = [
       'Lập trình Flutter',
       'Cơ sở dữ liệu',
@@ -69,6 +82,7 @@ class ApiService {
       grades.shuffle();
       return Course(
         id: _uuid.v4(),
+        studentId: studentId,
         name: title,
         semester: 'Kỳ 1',
         credits: 3,
