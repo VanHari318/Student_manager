@@ -49,5 +49,17 @@ class FirestoreService {
       await doc.reference.delete();
     }
   }
+
+  // Clear all data for testing
+  Future<void> deleteAllData() async {
+    final students = await _studentsRef.get();
+    for (var doc in students.docs) {
+      await doc.reference.delete();
+    }
+    final courses = await _coursesRef.get();
+    for (var doc in courses.docs) {
+      await doc.reference.delete();
+    }
+  }
 }
 

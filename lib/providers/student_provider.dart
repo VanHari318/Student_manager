@@ -97,6 +97,9 @@ class StudentProvider with ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
+      // Clear old data first to avoid mix with English names
+      await _firestoreService.deleteAllData();
+
       final newStudents = await _apiService.fetchSampleStudents(30);
       for (var student in newStudents) {
         await _firestoreService.addStudent(student);
