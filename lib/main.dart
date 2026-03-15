@@ -5,9 +5,13 @@ import 'providers/student_provider.dart';
 import 'providers/theme_provider.dart';
 import 'screens/splash_screen.dart';
 
+import 'firebase_options.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(); // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  ); // Initialize Firebase
   
   runApp(
     MultiProvider(

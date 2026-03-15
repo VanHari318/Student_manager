@@ -92,7 +92,7 @@ class StudentProvider with ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      final newStudents = await _apiService.fetchSampleStudents(10);
+      final newStudents = await _apiService.fetchSampleStudents(30);
       for (var student in newStudents) {
         await _firestoreService.addStudent(student);
       }

@@ -6,7 +6,7 @@ import '../models/student.dart';
 class StudentCard extends StatelessWidget {
   final Student student;
 
-  const StudentCard({Key? key, required this.student}) : super(key: key);
+  const StudentCard({super.key, required this.student});
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +33,7 @@ class StudentCard extends StatelessWidget {
               errorWidget: (context, url, error) => Container(
                 width: 50,
                 height: 50,
-                color: Theme.of(context).primaryColor.withOpacity(0.2),
+                color: Theme.of(context).primaryColor.withValues(alpha: 0.2),
                 child: const Icon(Icons.person, color: Colors.blue),
               ),
             ),

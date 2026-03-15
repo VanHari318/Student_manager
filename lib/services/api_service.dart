@@ -43,40 +43,37 @@ class ApiService {
   }
 
   String _getRandomMajor() {
-    const majors = [
-      'Công nghệ thông tin',
-      'Kế toán',
-      'Ngôn ngữ Anh',
-      'Kinh doanh quốc tế',
-      'Marketing',
-      'Kỹ thuật phần mềm'
-    ];
-    majors.shuffle();
-    return majors.first;
+    return 'Công nghệ thông tin';
   }
 
   double _getRandomGpa() {
-    final list = [2.5, 3.0, 3.2, 3.5, 3.8, 4.0, 2.0];
+    final list = [2.5, 3.0, 3.2, 3.5, 3.8, 4.0, 2.0, 2.8, 3.6];
     list.shuffle();
     return list.first;
   }
 
   List<Course> _generateSampleCourses() {
-    return [
-      Course(
-        id: _uuid.v4(),
-        name: 'Lập trình Flutter',
-        semester: 'Kỳ 1',
-        credits: 3,
-        grade: 8.5,
-      ),
-      Course(
-        id: _uuid.v4(),
-        name: 'Cơ sở dữ liệu',
-        semester: 'Kỳ 1',
-        credits: 3,
-        grade: 7.0,
-      )
+    final titles = [
+      'Lập trình Flutter',
+      'Cơ sở dữ liệu',
+      'Cấu trúc dữ liệu và giải thuật',
+      'Mạng máy tính',
+      'Hệ điều hành',
+      'Trí tuệ nhân tạo',
+      'Kiến trúc máy tính',
+      'Thiết kế phần mềm'
     ];
+    
+    return titles.map((title) {
+      final grades = [7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 6.5, 10.0];
+      grades.shuffle();
+      return Course(
+        id: _uuid.v4(),
+        name: title,
+        semester: 'Kỳ 1',
+        credits: 3,
+        grade: grades.first,
+      );
+    }).toList();
   }
 }
