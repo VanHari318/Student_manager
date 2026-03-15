@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:image_picker/image_picker.dart';
@@ -6,7 +7,6 @@ import 'dart:io';
 import '../models/student.dart';
 import '../providers/student_provider.dart';
 import 'package:intl/intl.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 
 class AddEditStudentScreen extends StatefulWidget {
   final Student? student;
@@ -122,26 +122,19 @@ class _AddEditStudentScreenState extends State<AddEditStudentScreen> {
     }
   }
 
-  Future<String> _uploadImageToFirebase(File imageFile) async {
-    try {
-      final String fileName = 'avatars/${const Uuid().v4()}.jpg';
-      final Reference ref = FirebaseStorage.instance.ref().child(fileName);
-      await ref.putFile(imageFile);
-      return await ref.getDownloadURL();
-    } catch (e) {
-      throw Exception('Lỗi upload ảnh: $e');
-    }
-  }
-
   void _saveForm() async {
     if (_formKey.currentState!.validate()) {
       try {
         setState(() => _isUploadingImage = true);
 
-        // Upload image if selected, otherwise use existing or empty
-        String finalAvatarUrl = widget.student?.avatarUrl ?? '';
+        // Use image path if selected, otherwise use existing or empty
+        String finalAvatarUrl = (widget.student?.avatarUrl ?? '').toString();
         if (_selectedImageFile != null) {
-          finalAvatarUrl = await _uploadImageToFirebase(_selectedImageFile!);
+          final path = _selectedImageFile!.path;
+          // Only set path if it's not empty (web might return empty)
+          if (path.isNotEmpty) {
+            finalAvatarUrl = path.toString();
+          }
         }
 
         final provider = Provider.of<StudentProvider>(context, listen: false);
@@ -163,7 +156,8 @@ class _AddEditStudentScreenState extends State<AddEditStudentScreen> {
           notes: _notesController.text.trim(),
           gpa: gpa,
           enrollmentDate: _enrollmentDate,
-          courses: _loadedStudent?.courses ?? widget.student?.courses ?? [],
+          courses:
+              _loadedStudent?.courses ?? widget.student?.courses ?? const [],
         );
 
         if (widget.student == null) {
@@ -282,6 +276,12 @@ class _AddEditStudentScreenState extends State<AddEditStudentScreen> {
   }
 
   Widget _buildAvatarPicker() {
+    final hasNewImage = _selectedImageFile != null;
+    final hasOldImage =
+        widget.student != null &&
+        widget.student!.avatarUrl.isNotEmpty &&
+        !kIsWeb;
+
     return Column(
       children: [
         Container(
@@ -291,14 +291,24 @@ class _AddEditStudentScreenState extends State<AddEditStudentScreen> {
             shape: BoxShape.circle,
             color: Colors.grey.shade200,
             border: Border.all(
-              color: _selectedImageFile != null ? Colors.green : Colors.grey,
+              color: hasNewImage ? Colors.green : Colors.grey,
               width: 2,
             ),
           ),
-          child: _selectedImageFile != null
+          child: hasNewImage
               ? ClipRRect(
                   borderRadius: BorderRadius.circular(60),
                   child: Image.file(_selectedImageFile!, fit: BoxFit.cover),
+                )
+              : hasOldImage
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(60),
+                  child: Image.file(
+                    File(widget.student!.avatarUrl),
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) =>
+                        const Icon(Icons.person, size: 60),
+                  ),
                 )
               : const Icon(Icons.person, size: 60),
         ),

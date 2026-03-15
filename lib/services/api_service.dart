@@ -45,12 +45,9 @@ class ApiService {
   }
 
   String _getAvatarUrl() {
-    // Use UI Avatars (CORS-friendly for both web and mobile)
-    final colors = ['FF6B6B', '4ECDC4', '45B7D1', 'FFA07A', '98D8C8', 'F7DC6F'];
-    colors.shuffle();
-    final names = ['Student', 'User', 'Member', 'Avatar', 'Profile', 'Person'];
-    names.shuffle();
-    return 'https://ui-avatars.com/api/?name=${names.first}&background=${colors.first}&color=fff&size=300&bold=true';
+    // Return empty string instead of HTTP URL to ensure avatarUrl is always a local path string
+    // This prevents type mismatch errors when serializing to Firestore on web
+    return '';
   }
 
   String _getRandomVietnameseName() {

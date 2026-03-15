@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'dart:io';
 import '../models/student.dart';
 import '../models/course.dart';
 import '../providers/student_provider.dart';
@@ -93,13 +94,24 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> {
                       color: Colors.blue,
                     ),
                   )
+                : kIsWeb
+                ? CircleAvatar(
+                    radius: 50,
+                    backgroundColor: Theme.of(
+                      context,
+                    ).primaryColor.withValues(alpha: 0.2),
+                    child: const Icon(
+                      Icons.person,
+                      size: 50,
+                      color: Colors.blue,
+                    ),
+                  )
                 : CircleAvatar(
                     radius: 50,
-                    backgroundImage: CachedNetworkImageProvider(
-                      _currentStudent.avatarUrl,
-                    ),
+                    backgroundImage: FileImage(File(_currentStudent.avatarUrl)),
                     onBackgroundImageError: (exception, stackTrace) {
-                      // Fallback icon if image fails to load
+                      // Handle case where file doesn't exist
+                      debugPrint('Error loading avatar: $exception');
                     },
                   ),
           ),

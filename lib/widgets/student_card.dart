@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:shimmer/shimmer.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:io';
 import '../models/student.dart';
 import '../screens/student_detail_screen.dart';
 
@@ -30,21 +30,21 @@ class StudentCard extends StatelessWidget {
                     ).primaryColor.withValues(alpha: 0.2),
                     child: const Icon(Icons.person, color: Colors.blue),
                   )
-                : CachedNetworkImage(
-                    imageUrl: student.avatarUrl,
+                : kIsWeb
+                ? Container(
+                    width: 50,
+                    height: 50,
+                    color: Theme.of(
+                      context,
+                    ).primaryColor.withValues(alpha: 0.2),
+                    child: const Icon(Icons.person, color: Colors.blue),
+                  )
+                : Image.file(
+                    File(student.avatarUrl),
                     width: 50,
                     height: 50,
                     fit: BoxFit.cover,
-                    placeholder: (context, url) => Shimmer.fromColors(
-                      baseColor: Colors.grey[300]!,
-                      highlightColor: Colors.grey[100]!,
-                      child: Container(
-                        color: Colors.white,
-                        width: 50,
-                        height: 50,
-                      ),
-                    ),
-                    errorWidget: (context, url, error) => Container(
+                    errorBuilder: (context, error, stackTrace) => Container(
                       width: 50,
                       height: 50,
                       color: Theme.of(
