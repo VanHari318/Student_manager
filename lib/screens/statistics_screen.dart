@@ -277,4 +277,85 @@ class StatisticsScreen extends StatelessWidget {
       ),
     );
   }
+
+  // Builds a TabBar of majors where each tab shows GPA pie chart for that major.
+  Widget _buildMajorTabs(BuildContext context, StudentProvider provider) {
+    final majors = provider.availableMajors;
+    if (majors.isEmpty) return const SizedBox.shrink();
+
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: DefaultTabController(
+          length: majors.length,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+                child: Text('Phân tích theo Ngành', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+              TabBar(
+                isScrollable: true,
+                tabs: majors.map((m) => Tab(text: m)).toList(),
+                labelColor: Theme.of(context).primaryColor,
+                unselectedLabelColor: Colors.grey,
+                indicatorColor: Theme.of(context).primaryColor,
+              ),
+              SizedBox(
+                height: 260,
+                child: TabBarView(
+                  children: majors.map((major) {
+                    return Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: _buildGpaPieForMajor(context, provider, major),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Reusable chart for a specific major - uses provider.getGPAStatisticsByMajor
+  Widget _buildGpaPieForMajor(BuildContext context, StudentProvider provider, String major) {
+    final ranges = provider.getGPAStatisticsByMajor(major);
+    final total = ranges.values.fold<int>(0, (p, e) => p + e);
+
+    return Column(
+      children: [
+        Text(major, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 160,
+          child: total == 0
+              ? const Center(child: Text('Không có sinh viên trong ngành này.'))
+              : PieChart(
+                  PieChartData(
+                    sections: [
+                      _pieSection(ranges['Xuất sắc'] ?? 0, total, 'XS', Colors.green),
+                      _pieSection(ranges['Giỏi'] ?? 0, total, 'G', Colors.blue),
+                      _pieSection(ranges['Khá'] ?? 0, total, 'K', Colors.orange),
+                      _pieSection(ranges['Trung bình'] ?? 0, total, 'TB', Colors.red),
+                    ],
+                    sectionsSpace: 2,
+                    centerSpaceRadius: 36,
+                  ),
+                ),
+        ),
+        const SizedBox(height: 8),
+        _buildLegend({
+          'Xuất sắc (>=3.6)': ranges['Xuất sắc'] ?? 0,
+          'Giỏi (3.2-3.59)': ranges['Giỏi'] ?? 0,
+          'Khá (2.5-3.19)': ranges['Khá'] ?? 0,
+          'Trung bình (<2.5)': ranges['Trung bình'] ?? 0,
+        }),
+      ],
+    );
+  }
 }

@@ -138,6 +138,19 @@ class StudentProvider with ChangeNotifier {
     return avg;
   }
 
+  /// Returns GPA distribution counts for a given major.
+  /// The returned map keys are: 'Xuất sắc', 'Giỏi', 'Khá', 'Trung bình'
+  Map<String, int> getGPAStatisticsByMajor(String major) {
+    final filtered = _students.where((s) => s.major == major).toList();
+    final Map<String, int> ranges = {
+      'Xuất sắc': filtered.where((s) => s.gpa >= 3.6).length,
+      'Giỏi': filtered.where((s) => s.gpa >= 3.2 && s.gpa < 3.6).length,
+      'Khá': filtered.where((s) => s.gpa >= 2.5 && s.gpa < 3.2).length,
+      'Trung bình': filtered.where((s) => s.gpa < 2.5).length,
+    };
+    return ranges;
+  }
+
   // Statistics by Course
   List<String> get availableCourses {
     final set = <String>{};
