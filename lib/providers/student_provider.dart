@@ -113,6 +113,75 @@ class StudentProvider with ChangeNotifier {
     return list;
   }
 
+  // Statistics by Major
+  Map<String, int> get studentsCountByMajor {
+    final Map<String, int> counts = {};
+    for (var s in _students) {
+      final key = (s.major.isEmpty) ? 'Khác' : s.major;
+      counts[key] = (counts[key] ?? 0) + 1;
+    }
+    return counts;
+  }
+
+  Map<String, double> get averageGpaByMajor {
+    final Map<String, double> totals = {};
+    final Map<String, int> counts = {};
+    for (var s in _students) {
+      final key = (s.major.isEmpty) ? 'Khác' : s.major;
+      totals[key] = (totals[key] ?? 0) + s.gpa;
+      counts[key] = (counts[key] ?? 0) + 1;
+    }
+    final Map<String, double> avg = {};
+    totals.forEach((k, v) {
+      avg[k] = (v / (counts[k] ?? 1));
+    });
+    return avg;
+  }
+
+  // Statistics by Course
+  List<String> get availableCourses {
+    final set = <String>{};
+    for (var s in _students) {
+      for (var c in s.courses) {
+        if (c.name.isNotEmpty) set.add(c.name);
+      }
+    }
+    final list = set.toList()..sort();
+    return list;
+  }
+
+  /// Count distinct students that have taken each course name
+  Map<String, int> get studentsCountByCourse {
+    final Map<String, Set<String>> studentSetByCourse = {};
+    for (var s in _students) {
+      for (var c in s.courses) {
+        final name = c.name.isEmpty ? 'Unknown' : c.name;
+        studentSetByCourse.putIfAbsent(name, () => <String>{}).add(s.id);
+      }
+    }
+    final Map<String, int> counts = {};
+    studentSetByCourse.forEach((k, v) => counts[k] = v.length);
+    return counts;
+  }
+
+  /// Average grade across all occurrences of each course name
+  Map<String, double> get averageGradeByCourse {
+    final Map<String, double> totals = {};
+    final Map<String, int> counts = {};
+    for (var s in _students) {
+      for (var c in s.courses) {
+        final name = c.name.isEmpty ? 'Unknown' : c.name;
+        totals[name] = (totals[name] ?? 0) + c.grade;
+        counts[name] = (counts[name] ?? 0) + 1;
+      }
+    }
+    final Map<String, double> avg = {};
+    totals.forEach((k, v) {
+      avg[k] = (v / (counts[k] ?? 1));
+    });
+    return avg;
+  }
+
   // Actions
   Future<void> addStudent(Student student) =>
       _firestoreService.addStudent(student);

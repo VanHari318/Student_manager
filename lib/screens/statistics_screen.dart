@@ -32,10 +32,121 @@ class StatisticsScreen extends StatelessWidget {
                 _buildGpaDistribution(context, provider),
                 const SizedBox(height: 24),
                 _buildMajorDistribution(context, provider),
+                const SizedBox(height: 24),
+                _buildCohortDistribution(context, provider),
+                const SizedBox(height: 24),
+                _buildCourseDistribution(context, provider),
               ],
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildCohortDistribution(BuildContext context, StudentProvider provider) {
+    // Group students by enrollment year (khóa)
+    final cohortCounts = <int, int>{};
+    for (var s in provider.students) {
+      final year = s.enrollmentDate.year;
+      cohortCounts[year] = (cohortCounts[year] ?? 0) + 1;
+    }
+
+    final sortedCohorts = cohortCounts.entries.toList()
+      ..sort((a, b) => b.key.compareTo(a.key));
+
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Số lượng theo Khóa', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            ...sortedCohorts.map((entry) => Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Khóa ${entry.key}', style: const TextStyle(fontWeight: FontWeight.w500)),
+                      Text('${entry.value} SV'),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  LinearProgressIndicator(
+                    value: entry.value / (provider.students.isEmpty ? 1 : provider.students.length),
+                    backgroundColor: Colors.grey[200],
+                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.teal),
+                    minHeight: 8,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ],
+              ),
+            )),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCourseDistribution(BuildContext context, StudentProvider provider) {
+    // Count distinct students per course name across all students
+    final courseCounts = <String, int>{};
+    for (var s in provider.students) {
+      final seen = <String>{};
+      for (var c in s.courses) {
+        final name = c.name.trim();
+        if (name.isEmpty) continue;
+        if (seen.contains(name)) continue;
+        seen.add(name);
+        courseCounts[name] = (courseCounts[name] ?? 0) + 1;
+      }
+    }
+
+    final sortedCourses = courseCounts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Số lượng theo Môn học', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            if (sortedCourses.isEmpty) const Text('Không có dữ liệu môn học.'),
+            ...sortedCourses.map((entry) => Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(child: Text(entry.key, style: const TextStyle(fontWeight: FontWeight.w500))),
+                      Text('${entry.value} SV'),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  LinearProgressIndicator(
+                    value: entry.value / (provider.students.isEmpty ? 1 : provider.students.length),
+                    backgroundColor: Colors.grey[200],
+                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.indigo),
+                    minHeight: 8,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ],
+              ),
+            )),
+          ],
+        ),
       ),
     );
   }
