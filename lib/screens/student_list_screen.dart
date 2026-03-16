@@ -35,6 +35,21 @@ class StudentListScreen extends StatelessWidget {
                 final width = MediaQuery.of(context).size.width;
                 final crossAxisCount = width > 800 ? 2 : 1;
 
+                if (crossAxisCount == 1) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 8,
+                    ),
+                    child: ListView.builder(
+                      itemCount: filteredStudents.length,
+                      itemBuilder: (context, index) {
+                        return StudentCard(student: filteredStudents[index]);
+                      },
+                    ),
+                  );
+                }
+
                 return Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
@@ -45,7 +60,7 @@ class StudentListScreen extends StatelessWidget {
                       crossAxisCount: crossAxisCount,
                       mainAxisSpacing: 8,
                       crossAxisSpacing: 8,
-                      childAspectRatio: crossAxisCount == 1 ? 5 : 2.8,
+                      mainAxisExtent: 140,
                     ),
                     itemCount: filteredStudents.length,
                     itemBuilder: (context, index) {
