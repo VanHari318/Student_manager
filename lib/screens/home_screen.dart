@@ -51,7 +51,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text('Lỗi: ${provider.error}', textAlign: TextAlign.center),
                   const SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: () => provider.fetchSampleFromApi(),
+                    onPressed: () async {
+                      // Retry without clearing existing data to avoid accidental loss
+                      await provider.fetchSampleFromApi(clearBefore: false);
+                    },
                     child: const Text('Thử lại'),
                   ),
                 ],
@@ -147,10 +150,42 @@ class _HomeScreenState extends State<HomeScreen> {
                           icon: Icons.download,
                           label: 'Tải Mẫu',
                           onTap: () async {
-                            await provider.fetchSampleFromApi();
+                            // Confirm with the user to avoid accidental data loss
+                            final choice = await showDialog<String?>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('Tải dữ liệu mẫu'),
+                                content: const Text(
+                                  'Bạn muốn xóa dữ liệu hiện có trước khi tải dữ liệu mẫu không?\n\n"Gộp vào" sẽ thêm dữ liệu mẫu mà không xóa dữ liệu hiện tại.\n"Xóa rồi tải" sẽ xóa toàn bộ dữ liệu hiện có và thay bằng dữ liệu mẫu.'
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(ctx).pop('append'),
+                                    child: const Text('Gộp vào (không xóa)'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.of(ctx).pop('clear'),
+                                    child: const Text('Xóa rồi tải'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.of(ctx).pop(null),
+                                    child: const Text('Huỷ'),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (choice == null) return;
+
+                            if (choice == 'clear') {
+                              await provider.fetchSampleFromApi(clearBefore: true);
+                            } else {
+                              await provider.fetchSampleFromApi(clearBefore: false);
+                            }
+
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Đã tải DL mẫu')),
+                                const SnackBar(content: Text('Hoàn thành tải dữ liệu mẫu')),
                               );
                             }
                           },

@@ -235,13 +235,18 @@ class StudentProvider with ChangeNotifier {
     }
   }
 
-  Future<void> fetchSampleFromApi() async {
+  /// Fetch sample students from external API and add them to Firestore.
+  /// If [clearBefore] is true, existing Firestore data will be deleted first.
+  /// Default is false (append) to avoid accidental data loss.
+  Future<void> fetchSampleFromApi({bool clearBefore = false}) async {
     try {
       _isLoading = true;
       notifyListeners();
 
-      // Clear old data first to avoid mix with English names & CORS issues
-      await _firestoreService.deleteAllData();
+      if (clearBefore) {
+        // WARNING: deleting all data is destructive. Call with explicit intent.
+        await _firestoreService.deleteAllData();
+      }
 
       final newStudents = await _apiService.fetchSampleStudents(30);
       for (var student in newStudents) {
