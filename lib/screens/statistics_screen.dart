@@ -31,6 +31,8 @@ class StatisticsScreen extends StatelessWidget {
                 const SizedBox(height: 24),
                 _buildGpaDistribution(context, provider),
                 const SizedBox(height: 24),
+                _buildMajorTabs(context, provider),
+                const SizedBox(height: 16),
                 _buildMajorDistribution(context, provider),
                 const SizedBox(height: 24),
                 _buildCohortDistribution(context, provider),
