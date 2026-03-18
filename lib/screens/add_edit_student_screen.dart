@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
-import 'dart:io';
 import '../models/student.dart';
 import '../providers/student_provider.dart';
 import 'package:intl/intl.dart';
@@ -248,8 +247,7 @@ class _AddEditStudentScreenState extends State<AddEditStudentScreen> {
         _isUploading = true;
       });
 
-      final File imageFile = File(pickedFile.path);
-      final String? imageUrl = await CloudinaryService.uploadImage(imageFile);
+      final String? imageUrl = await CloudinaryService.uploadImage(pickedFile);
 
       if (mounted) {
         if (imageUrl != null) {

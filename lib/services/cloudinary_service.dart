@@ -1,18 +1,23 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 
 class CloudinaryService {
   static const String cloudName = 'dojcgjli4';
   static const String uploadPreset = 'AvatarHocSinh';
 
-  static Future<String?> uploadImage(File imageFile) async {
+  static Future<String?> uploadImage(XFile imageFile) async {
     final url = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
 
     try {
+      final bytes = await imageFile.readAsBytes();
       final request = http.MultipartRequest('POST', url)
         ..fields['upload_preset'] = uploadPreset
-        ..files.add(await http.MultipartFile.fromPath('file', imageFile.path));
+        ..files.add(http.MultipartFile.fromBytes(
+          'file',
+          bytes,
+          filename: imageFile.name,
+        ));
 
       final response = await request.send();
 
