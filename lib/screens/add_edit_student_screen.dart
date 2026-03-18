@@ -5,6 +5,8 @@ import 'dart:io';
 import '../models/student.dart';
 import '../providers/student_provider.dart';
 import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
+import '../services/cloudinary_service.dart';
 
 class AddEditStudentScreen extends StatefulWidget {
   final Student? student;
@@ -37,6 +39,8 @@ class _AddEditStudentScreenState extends State<AddEditStudentScreen> {
   late DateTime _enrollmentDate = DateTime.now();
   late TextEditingController _avatarUrlController;
   Student? _loadedStudent;
+  bool _isUploading = false;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -229,95 +233,110 @@ class _AddEditStudentScreenState extends State<AddEditStudentScreen> {
     );
   }
 
+  Future<void> _pickAndUploadImage() async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 85,
+      );
+
+      if (pickedFile == null) return;
+
+      setState(() {
+        _isUploading = true;
+      });
+
+      final File imageFile = File(pickedFile.path);
+      final String? imageUrl = await CloudinaryService.uploadImage(imageFile);
+
+      if (mounted) {
+        if (imageUrl != null) {
+          setState(() {
+            _avatarUrlController.text = imageUrl;
+          });
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Tải ảnh lên thành công!')));
+        } else {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Tải ảnh lên thất bại.')));
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploading = false;
+        });
+      }
+    }
+  }
+
   Widget _buildAvatarPicker() {
     final currentUrl = _avatarUrlController.text.trim();
     final isUrl = currentUrl.startsWith('http');
-    final isPath =
-        currentUrl.isNotEmpty &&
-        !isUrl &&
-        (currentUrl.startsWith('/') || currentUrl.contains(':\\'));
 
     return Column(
       children: [
         // Preview Container
-        Container(
-          width: 120,
-          height: 120,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.grey.shade200,
-            border: Border.all(
-              color: currentUrl.isNotEmpty ? Colors.blue : Colors.grey,
-              width: 2,
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.grey.shade200,
+                border: Border.all(
+                  color: currentUrl.isNotEmpty ? Colors.blue : Colors.grey,
+                  width: 2,
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(60),
+                child: currentUrl.isEmpty
+                    ? const Icon(Icons.person, size: 60)
+                    : isUrl
+                    ? Image.network(
+                        currentUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(Icons.image_not_supported, size: 60),
+                      )
+                    : const Icon(Icons.image_not_supported, size: 60),
+              ),
             ),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(60),
-            child: currentUrl.isEmpty
-                ? const Icon(Icons.person, size: 60)
-                : isUrl
-                ? Image.network(
-                    currentUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
-                        const Icon(Icons.image_not_supported, size: 60),
-                  )
-                : isPath
-                ? Image.file(
-                    File(currentUrl),
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
-                        const Icon(Icons.image_not_supported, size: 60),
-                  )
-                : const Icon(Icons.image_not_supported, size: 60),
-          ),
+            if (_isUploading)
+              const SizedBox(
+                width: 120,
+                height: 120,
+                child: CircularProgressIndicator(strokeWidth: 3),
+              ),
+          ],
         ),
         const SizedBox(height: 12),
 
-        // URL/Path input field
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8.0),
-          child: TextFormField(
-            controller: _avatarUrlController,
-            decoration: InputDecoration(
-              labelText: 'URL hoặc đường dẫn ảnh (tùy chọn)',
-              hintText: 'https://... hoặc /path/to/file',
-              prefixIcon: const Icon(Icons.image),
-              suffixIcon: currentUrl.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        setState(() {
-                          _avatarUrlController.clear();
-                        });
-                      },
-                    )
-                  : null,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+        // Upload Button
+        ElevatedButton.icon(
+          onPressed: _isUploading ? null : _pickAndUploadImage,
+          icon: const Icon(Icons.cloud_upload),
+          label: Text(_isUploading ? 'Đang tải lên...' : 'Tải ảnh lên'),
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
             ),
-            onChanged: (_) => setState(() {}),
           ),
         ),
-
-        // Platform info
-        if (currentUrl.isNotEmpty && isPath)
-          Padding(
-            padding: const EdgeInsets.only(top: 8.0),
-            child: Container(
-              padding: const EdgeInsets.all(8.0),
-              decoration: BoxDecoration(
-                color: Colors.orange.shade100,
-                border: Border.all(color: Colors.orange),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Text(
-                '⚠️ Đường dẫn local không hoạt động trên Web. Dùng URL để hỗ trợ Web.',
-                style: TextStyle(fontSize: 12, color: Colors.orange),
-              ),
-            ),
-          ),
       ],
     );
   }
