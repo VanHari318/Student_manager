@@ -1,0 +1,279 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/student_provider.dart';
+import '../providers/theme_provider.dart';
+import '../widgets/stat_card.dart';
+import '../widgets/student_card.dart';
+import 'student_list_screen.dart';
+import 'add_edit_student_screen.dart';
+import 'statistics_screen.dart';
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('TH5 - Nhóm 11'),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(
+              themeProvider.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+            ),
+            onPressed: () {
+              themeProvider.toggleTheme();
+            },
+          ),
+        ],
+      ),
+      body: Consumer<StudentProvider>(
+        builder: (context, provider, child) {
+          if (provider.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (provider.error.isNotEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text('Lỗi: ${provider.error}', textAlign: TextAlign.center),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () async {
+                      // Retry without clearing existing data to avoid accidental loss
+                      await provider.fetchSampleFromApi(clearBefore: false);
+                    },
+                    child: const Text('Thử lại'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final topStudents = provider.filteredStudents.take(5).toList();
+
+          return RefreshIndicator(
+            onRefresh: () async {
+              // Usually we don't need to refresh manually with stream
+              // but we can add a small delay
+              await Future.delayed(const Duration(seconds: 1));
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Dashboard Stats
+                    Row(
+                      children: [
+                        Expanded(
+                          child: StatCard(
+                            title: 'Tổng Sinh Viên',
+                            value: provider.totalStudents.toString(),
+                            icon: Icons.people_alt,
+                            color: Colors.blue,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: StatCard(
+                            title: 'Điểm TB',
+                            value: provider.averageGpa.toStringAsFixed(2),
+                            icon: Icons.analytics,
+                            color: Colors.orange,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Quick Actions
+                    Wrap(
+                      alignment: WrapAlignment.spaceEvenly,
+                      children: [
+                        _buildActionBtn(
+                          context,
+                          icon: Icons.add,
+                          label: 'Thêm Mới',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const AddEditStudentScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _buildActionBtn(
+                          context,
+                          icon: Icons.list,
+                          label: 'Tất Cả',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const StudentListScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _buildActionBtn(
+                          context,
+                          icon: Icons.pie_chart,
+                          label: 'Thống Kê',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const StatisticsScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _buildActionBtn(
+                          context,
+                          icon: Icons.download,
+                          label: 'Tải Mẫu',
+                          onTap: () async {
+                            // Confirm with the user to avoid accidental data loss
+                            final choice = await showDialog<String?>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('Tải dữ liệu mẫu'),
+                                content: const Text(
+                                  'Bạn muốn xóa dữ liệu hiện có trước khi tải dữ liệu mẫu không?\n\n"Gộp vào" sẽ thêm dữ liệu mẫu mà không xóa dữ liệu hiện tại.\n"Xóa rồi tải" sẽ xóa toàn bộ dữ liệu hiện có và thay bằng dữ liệu mẫu.'
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(ctx).pop('append'),
+                                    child: const Text('Gộp vào (không xóa)'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.of(ctx).pop('clear'),
+                                    child: const Text('Xóa rồi tải'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.of(ctx).pop(null),
+                                    child: const Text('Huỷ'),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (choice == null) return;
+
+                            if (choice == 'clear') {
+                              await provider.fetchSampleFromApi(clearBefore: true);
+                            } else {
+                              await provider.fetchSampleFromApi(clearBefore: false);
+                            }
+
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Hoàn thành tải dữ liệu mẫu')),
+                              );
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Recent students
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Mới cập nhật',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const StudentListScreen(),
+                              ),
+                            );
+                          },
+                          child: const Text('Xem tất cả'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+
+                    if (topStudents.isEmpty)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(32.0),
+                          child: Text(
+                            'Chưa có sinh viên nào. Vui lòng tải mẫu hoặc thêm mới.',
+                          ),
+                        ),
+                      )
+                    else
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: topStudents.length,
+                        itemBuilder: (context, index) {
+                          return StudentCard(student: topStudents[index]);
+                        },
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildActionBtn(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: Theme.of(context).primaryColor),
+            ),
+            const SizedBox(height: 8),
+            Text(label, style: const TextStyle(fontSize: 12)),
+          ],
+        ),
+      ),
+    );
+  }
+}
